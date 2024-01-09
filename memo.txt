@@ -1,0 +1,9 @@
+
+Une fois votre chaîne de connexion configurée, vous pouvez créer votre base grâce à Doctrine dans votre terminal : 
+ php bin/console doctrine:database:create   .
+
+Et finalement, il ne reste plus qu’à dire à Doctrine de transformer l’entité en véritable table avec la commande 
+ php bin/console doctrine:schema:update --force   .
+
+composer require orm-fixtures --dev
+php bin/console doctrine:fixtures:load

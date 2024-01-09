@@ -13,7 +13,7 @@ class ProductFixtures extends Fixture
         for ($i = 0; $i < 50; $i++) {
             $product = new Product;
             $product->setName('Phone ' . $i);
-            $product->setDescription('Description phone ' . $i);
+            $product->setDescription('Description Phone ' . $i);
             $product->setPrice(mt_rand(750, 1500));
             $product->setQuantity(mt_rand(3, 8));
             $product->setModel('Model phone ' . $i);

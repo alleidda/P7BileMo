@@ -5,6 +5,9 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use App\Service\Pagination;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,4 +46,29 @@ class UserController extends AbstractController
         
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
+
+    #[Route('/api/users', name: 'addUser', methods: ['POST'])]
+    public function createUser(
+    Request $request,
+    EntityManagerInterface $em,
+    SerializerInterface $serializer,
+    UrlGeneratorInterface $urlGenerator
+    ): JsonResponse
+    {
+        $data = $request->getContent();
+        $user = $serializer->deserialize($data, User::class, 'json');
+        $user->setCustomer($this->getUser());
+        $user->setCreatedAt(new \DateTimeImmutable());
+
+
+        $em->persist($user);
+        $em->flush();
+        $context = SerializationContext::create()->setGroups(["getUsers"]);
+        $jsonUser = $serializer->serialize($user, 'json', $context);
+        $location = $urlGenerator->generate('user', ['id' => $user->getId()],  UrlGeneratorInterface::ABSOLUTE_URL);
+
+        return new JsonResponse($jsonUser, Response::HTTP_CREATED, ["location" => $location], true);
+    }
+
+    
 }

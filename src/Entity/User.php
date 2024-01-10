@@ -6,6 +6,31 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use JMS\Serializer\Annotation\Groups;
+use Hateoas\Configuration\Annotation as Hateoas;
+
+
+/**
+ *  @Hateoas\Relation(
+ *      "self",
+ *      href = @Hateoas\Route(
+ *          "user",
+ *          parameters = { "id" = "expr(object.getId())" }
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups="getUsers"),
+ *      attributes = {"method": "GET" }
+ * )
+ *  @Hateoas\Relation(
+ *      "all",
+ *      href = @Hateoas\Route(
+ *          "users",
+ *          absolute = true
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups ="getUsers"),
+ *      attributes = {"methods": "GET" }
+ * )
+ *
+ */
+
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 class User 
@@ -54,9 +79,6 @@ class User
         return $this;
     }
 
-    public function getUsername(): string {
-        return $this->getUserIdentifier();
-    }
 
     /**
      * A visual identifier that represents this user.

@@ -19,6 +19,16 @@ use Hateoas\Configuration\Annotation as Hateoas;
  *      exclusion = @Hateoas\Exclusion(groups="getUsers"),
  *      attributes = {"method": "GET" }
  * )
+ *
+ *  @Hateoas\Relation(
+ *      "delete",
+ *      href = @Hateoas\Route(
+ *          "deleteUser",
+ *          parameters = { "id" = "expr(object.getId())" }
+ *      ),
+ *      exclusion = @Hateoas\Exclusion(groups="getUsers"),
+ *      attributes = {"method": "DELETE" }
+ * )
  *  @Hateoas\Relation(
  *      "all",
  *      href = @Hateoas\Route(

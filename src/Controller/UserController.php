@@ -14,6 +14,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
 
 class UserController extends AbstractController
@@ -59,8 +61,6 @@ class UserController extends AbstractController
         $user = $serializer->deserialize($data, User::class, 'json');
         $user->setCustomer($this->getUser());
         $user->setCreatedAt(new \DateTimeImmutable());
-
-
         $em->persist($user);
         $em->flush();
         $context = SerializationContext::create()->setGroups(["getUsers"]);
@@ -68,6 +68,34 @@ class UserController extends AbstractController
         $location = $urlGenerator->generate('user', ['id' => $user->getId()],  UrlGeneratorInterface::ABSOLUTE_URL);
 
         return new JsonResponse($jsonUser, Response::HTTP_CREATED, ["location" => $location], true);
+    }
+
+
+    public function userNotExist(?User $user)
+    {
+        if (!$user) {
+            throw new NotFoundHttpException("No user found with this ID");
+        }
+    }
+
+    public function isNotOwner(string $attribute, User $user, string $message)
+    {
+        // If current customer is not the owner return an exception
+        if (!$this->isGranted($attribute, $user)) {
+            throw new HttpException(JsonResponse::HTTP_UNAUTHORIZED, $message);
+        }
+    }
+
+    #[Route('/api/users/{id}', name: 'deleteUser', methods: ['DELETE'])]
+    public function deleteUser(?User $user, EntityManagerInterface $em, int $id): JsonResponse
+    {
+        $this->userNotExist($user);
+        $this->isNotOwner('DELETEUSER', $user, 'You are not authorized to delete this content');
+
+        $em->remove($user);
+        $em->flush();
+
+        return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }
 
     

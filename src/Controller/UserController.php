@@ -23,7 +23,7 @@ class UserController extends AbstractController
 
 
     #[Route('/api/users/{id}', name: 'user', methods: ['GET'])]
-    public function getProductById(User $user, SerializerInterface $serializer): JsonResponse
+    public function getUserbyId(User $user, SerializerInterface $serializer): JsonResponse
     {
         $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'getUsers']);
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);

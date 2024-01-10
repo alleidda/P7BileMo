@@ -5,6 +5,7 @@ namespace App\Entity;
 use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use JMS\Serializer\Annotation\Groups;
 use Hateoas\Configuration\Annotation as Hateoas;
 
 /**
@@ -14,7 +15,8 @@ use Hateoas\Configuration\Annotation as Hateoas;
  *          "product",
  *          parameters = { "id" = "expr(object.getId())" }
  *      ),
- *      exclusion = @Hateoas\Exclusion(groups="getProduct")
+ *      exclusion = @Hateoas\Exclusion(groups="getProducts"),
+ *      attributes = {"method": "GET" }
  * )
  *
  */
@@ -25,24 +27,31 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(["getProducts"])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["getProducts"])]
     private ?string $name = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["getProducts"])]
     private ?string $description = null;
 
     #[ORM\Column]
+    #[Groups(["getProducts"])]
     private ?int $quantity = null;
 
     #[ORM\Column]
+    #[Groups(["getProducts"])]
     private ?int $price = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(["getProducts"])]
     private ?string $model = null;
 
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
+    #[Groups(["getProducts"])]
     private ?\DateTimeInterface $datePublish = null;
 
     public function __construct()

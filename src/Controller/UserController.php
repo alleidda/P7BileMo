@@ -11,34 +11,40 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 class UserController extends AbstractController
 {
     #[Route('/api/users', name: 'users', methods: ['GET'])]
-    public function getAllUser(Request $request,Pagination $paginator, SerializerInterface $serializer): JsonResponse
+    public function getAllUser(Request $request,Pagination $paginator, SerializerInterface $serializer, TagAwareCacheInterface $cache): JsonResponse
     {
         $page = $request->get('page', 1);
         $limit = $request->get('limit', 3);
 
-        $data = $paginator->paginate(
-            'SELECT user
-            FROM App\Entity\User user
-            WHERE user.customer = :id
-            ORDER BY user.id DESC',
-            ['id' => $this->getUser()],
-            $page,
-            $limit
-        );
+        $idCache = "getAllUsers-" . $page . "-" .$limit;
 
-
-        $context = SerializationContext::create()->setGroups(["getUsers"]);
-        $jsonUsersList = $serializer->serialize($data, 'json', $context);
+        $jsonUsersList = $cache->get($idCache, function(ItemInterface $item) use ($paginator, $page, $limit, $serializer) {
+            $item->tag("usersCache");
+            $data = $paginator->paginate(
+                'SELECT user
+                FROM App\Entity\User user
+                WHERE user.customer = :id
+                ORDER BY user.id DESC',
+                ['id' => $this->getUser()],
+                $page,
+                $limit
+            );
+            $context = SerializationContext::create()->setGroups(["getUsers"]);
+            return $serializer->serialize($data, 'json', $context);
+        });
 
        return new JsonResponse($jsonUsersList, Response::HTTP_OK, [], true);
     }
@@ -47,10 +53,15 @@ class UserController extends AbstractController
     #[Route('/api/users/{id}', name: 'user', methods: ['GET'])]
     public function getUserbyId(User $user, SerializerInterface $serializer): JsonResponse
     {
-        $context = SerializationContext::create()->setGroups(["getUsers"]);
-        $jsonUser = $serializer->serialize($user, 'json', $context);
-        
-        return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
+        $this->userNotExist($user);
+        $this->isNotOwner('USER', $user, 'You are not allowed to see this content');
+        if ($user) {
+            $context = SerializationContext::create()->setGroups(["getUsers"]);
+            $jsonUser = $serializer->serialize($user, 'json', $context);
+            
+            return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
+        }
+        return new JsonResponse(null, Response::HTTP_NOT_FOUND);
     }
 
     #[Route('/api/users', name: 'addUser', methods: ['POST'])]
@@ -65,6 +76,8 @@ class UserController extends AbstractController
         $user = $serializer->deserialize($data, User::class, 'json');
         $user->setCustomer($this->getUser());
         $user->setCreatedAt(new \DateTimeImmutable());
+
+        
         $em->persist($user);
         $em->flush();
         $context = SerializationContext::create()->setGroups(["getUsers"]);
@@ -91,14 +104,16 @@ class UserController extends AbstractController
     }
 
     #[Route('/api/users/{id}', name: 'deleteUser', methods: ['DELETE'])]
-    public function deleteUser(?User $user, EntityManagerInterface $em, int $id): JsonResponse
+    public function deleteUser(?User $user, EntityManagerInterface $em, TagAwareCacheInterface $cachePool): JsonResponse
     {
+        $cachePool->invalidateTags(["usersCache"]);
         $this->userNotExist($user);
         $this->isNotOwner('DELETEUSER', $user, 'You are not authorized to delete this content');
 
         $em->remove($user);
         $em->flush();
 
+        //204 no content
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }
 

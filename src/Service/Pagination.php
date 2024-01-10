@@ -24,21 +24,21 @@ class Pagination
     {
         $this->entityManager = $entityManager;
         $this->requestStack = $requestStack;
-        $this->setCurrentPage();
-        $this->setLimit();
     }
 
-    public function paginate(string $dql, array $paramsToBind = null)
+    public function paginate(string $dql, array $paramsToBind = null, $page, $limit)
     {
         $this->setDql($dql);
         $this->setParamsToBind($paramsToBind);
+         $this->setCurrentPage($page);
+        $this->setLimit($limit);
 
         $items = $this->initPagination();
         $result = [
             'items' => $items->getIterator(),
             'meta' => [
-                'limit' => $this->limit,
-                'current_page' => $this->currentPage,
+                'current_page' => $this->setCurrentPage($page),
+                'limit' => $this->setLimit($limit),
                 'total_pages' => $this->lastPage,
                 'total_items' => $items->count()
             ]
@@ -79,7 +79,7 @@ class Pagination
         return $this->limit;
     }
 
-    private function setLimit()
+    private function setLimit($limit)
     {
         $this->limit = $this->requestStack->getMainRequest()->get('limit', 10);
     }
@@ -89,7 +89,7 @@ class Pagination
         return $this->currentPage;
     }
 
-    private function setCurrentPage()
+    private function setCurrentPage($page)
     {
         $this->currentPage = $this->requestStack->getMainRequest()->get('page', 1);
     }

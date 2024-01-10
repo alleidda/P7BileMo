@@ -21,17 +21,21 @@ use Symfony\Component\Routing\Annotation\Route;
 class UserController extends AbstractController
 {
     #[Route('/api/users', name: 'users', methods: ['GET'])]
-    public function getAllUser(UserRepository $userRepository, Pagination $paginator, SerializerInterface $serializer): JsonResponse
+    public function getAllUser(Request $request,Pagination $paginator, SerializerInterface $serializer): JsonResponse
     {
-        /* $data = $paginator->paginate(
+        $page = $request->get('page', 1);
+        $limit = $request->get('limit', 3);
+
+        $data = $paginator->paginate(
             'SELECT user
             FROM App\Entity\User user
             WHERE user.customer = :id
             ORDER BY user.id DESC',
-            ['id' => $this->getUser()]
-        ); */
+            ['id' => $this->getUser()],
+            $page,
+            $limit
+        );
 
-        $data = $userRepository->findAll();
 
         $context = SerializationContext::create()->setGroups(["getUsers"]);
         $jsonUsersList = $serializer->serialize($data, 'json', $context);

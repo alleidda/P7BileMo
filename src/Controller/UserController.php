@@ -11,13 +11,13 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use JMS\Serializer\SerializationContext;
 use JMS\Serializer\SerializerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\Cache\Adapter\TagAwareAdapterInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
@@ -69,7 +69,8 @@ class UserController extends AbstractController
     Request $request,
     EntityManagerInterface $em,
     SerializerInterface $serializer,
-    UrlGeneratorInterface $urlGenerator
+    UrlGeneratorInterface $urlGenerator,
+    ValidatorInterface $validator
     ): JsonResponse
     {
         $data = $request->getContent();
@@ -77,7 +78,12 @@ class UserController extends AbstractController
         $user->setCustomer($this->getUser());
         $user->setCreatedAt(new \DateTimeImmutable());
 
-        
+        // Errors handling
+        $errors = $validator->validate($user);
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+
         $em->persist($user);
         $em->flush();
         $context = SerializationContext::create()->setGroups(["getUsers"]);
@@ -86,7 +92,6 @@ class UserController extends AbstractController
 
         return new JsonResponse($jsonUser, Response::HTTP_CREATED, ["location" => $location], true);
     }
-
 
     public function userNotExist(?User $user)
     {
@@ -116,6 +121,4 @@ class UserController extends AbstractController
         //204 no content
         return new JsonResponse([], Response::HTTP_NO_CONTENT);
     }
-
-    
 }

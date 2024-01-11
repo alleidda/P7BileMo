@@ -6,7 +6,10 @@ use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\UserInterface;
 use JMS\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Hateoas\Configuration\Annotation as Hateoas;
+
 
 
 /**
@@ -43,6 +46,7 @@ use Hateoas\Configuration\Annotation as Hateoas;
 
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
+#[UniqueEntity(fields: ['email'], message: 'Cet email est invalide')]
 class User 
 {
     #[ORM\Id]
@@ -53,14 +57,17 @@ class User
 
     #[ORM\Column(length: 180, unique: true)]
     #[Groups(["getUsers"])]
+    #[Assert\NotBlank(message: "L'email est obligatoire")]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(["getUsers"])]
+    #[Assert\NotBlank(message: "Le prénom est obligatoire")]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 255)]
     #[Groups(["getUsers"])]
+    #[Assert\NotBlank(message: "Le nom est obligatoire")]
     private ?string $lastName = null;
 
     #[ORM\Column]
@@ -70,6 +77,7 @@ class User
     #[ORM\ManyToOne(inversedBy: 'users', cascade: ['persist'])]
     #[ORM\JoinColumn(nullable: false)]
     #[Groups(["getUsers"])]
+    #[Assert\NotBlank(message: "Le id du customer est obligatoire")]
     private ?Customer $customer = null;
 
     public function getId(): ?int
